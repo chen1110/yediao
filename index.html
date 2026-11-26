@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>夜钓 · 搭建说明</title>
+<style>
+:root{--bg:#F6F3EA;--ink:#1E1E1E;--accent:#7B2FBE;--code:#0E1630}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 80px}
+h1{font-size:28px;margin:0 0 8px} h2{font-size:20px;margin:32px 0 8px;border-left:4px solid var(--accent);padding-left:10px}
+pre{background:var(--code);color:#E8E6F0;padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+img{max-width:100%;border:1px solid #ccc;background:#2a3a5a} .assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+table{border-collapse:collapse} td,th{border:1px solid #ccc;padding:4px 10px}
+</style></head><body><main>
+<h1>《夜钓》搭建说明</h1>
+<p>这是一款完整的竖屏小游戏。<b>请完全按本页实现：直接使用第 3 节的完整代码，不要改写、不要优化、不要替换任何数值、颜色和文字。</b>代码已经可以直接运行，在线试玩：<a href="https://chen1110.github.io/yediao/play.html">https://chen1110.github.io/yediao/play.html</a></p>
+
+<h2>1. 规格</h2>
+<ul>
+<li>设计画布 720×1570 竖屏，整体等比缩放居中，四周用 #0E1630 填充。</li>
+<li>右上角 200×110 是平台按钮区，不放任何内容。</li>
+<li>玩法：点击屏幕抛竿 → 等鱼咬钩 → 出现张力条，指针在色块内时点击即可收线。每局 60 秒，结束显示结算。</li>
+</ul>
+
+<h2>2. 素材（3 张，按原图使用，不重画）</h2>
+<div class="assets">
+<figure><img src="assets/bg.jpg" alt="背景"><figcaption>bg.jpg 背景 720×1570<br>https://chen1110.github.io/yediao/assets/bg.jpg</figcaption></figure>
+<figure><img src="assets/fish.png" alt="鱼"><figcaption>fish.png 鱼合图 720×320，3 列 × 2 行，每格 240×160<br>https://chen1110.github.io/yediao/assets/fish.png</figcaption></figure>
+<figure><img src="assets/ui.png" alt="UI"><figcaption>ui.png 组件合图 640×531，各组件坐标见代码中的 UI 表<br>https://chen1110.github.io/yediao/assets/ui.png</figcaption></figure>
+</div>
+
+<h2>3. 完整代码（单个 HTML 文件，原样使用）</h2>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no&quot;&gt;
+&lt;title&gt;夜钓&lt;/title&gt;
+&lt;style&gt;html,body{margin:0;height:100%;background:#0E1630;overflow:hidden;touch-action:none}canvas{display:block}&lt;/style&gt;
+&lt;/head&gt;&lt;body&gt;&lt;canvas id=&quot;game&quot;&gt;&lt;/canvas&gt;
+&lt;script&gt;
+// 《夜钓》v0 —— 单文件 Canvas 小游戏。设计基准 720x1570 竖屏，等比缩放。
+// 素材：bg.jpg(720x1570 背景) / fish.png(720x320，3列x2行，每格240x160) / ui.png(640x531 组件合图，坐标见 UI)
+const CFG = {&quot;version&quot;:&quot;A-网页版&quot;,&quot;subtitle&quot;:&quot;月亮在看，鱼也在看&quot;,&quot;emptyText&quot;:&quot;第一竿总是空的&quot;,&quot;eggCode&quot;:&quot;夜钓 YD-A-0427&quot;,&quot;barColor&quot;:&quot;#7B2FBE&quot;,&quot;barHz&quot;:1.37,&quot;zoneW&quot;:0.23,&quot;roundSec&quot;:60,&quot;rodTip&quot;:[620,992],&quot;assets&quot;:{&quot;bg&quot;:&quot;assets/bg.jpg&quot;,&quot;fish&quot;:&quot;assets/fish.png&quot;,&quot;ui&quot;:&quot;assets/ui.png&quot;},&quot;fish&quot;:[{&quot;id&quot;:0,&quot;name&quot;:&quot;小白条&quot;,&quot;p&quot;:35,&quot;kg&quot;:[0.1,0.3],&quot;coin&quot;:1,&quot;line&quot;:&quot;它看起来比你还困。&quot;},{&quot;id&quot;:1,&quot;name&quot;:&quot;斑纹鲈&quot;,&quot;p&quot;:25,&quot;kg&quot;:[0.4,1.2],&quot;coin&quot;:3,&quot;line&quot;:&quot;条纹很整齐，像排班表。&quot;},{&quot;id&quot;:2,&quot;name&quot;:&quot;镜面鲈&quot;,&quot;p&quot;:15,&quot;kg&quot;:[0.5,1.5],&quot;coin&quot;:5,&quot;line&quot;:&quot;你在它身上看到了自己的黑眼圈。&quot;},{&quot;id&quot;:3,&quot;name&quot;:&quot;鼓气鲀&quot;,&quot;p&quot;:12,&quot;kg&quot;:[0.3,0.9],&quot;coin&quot;:6,&quot;line&quot;:&quot;它很生气，但也只能生气。&quot;},{&quot;id&quot;:4,&quot;name&quot;:&quot;夜行鲶&quot;,&quot;p&quot;:9,&quot;kg&quot;:[1.5,4.0],&quot;coin&quot;:10,&quot;line&quot;:&quot;自带照明，省了你的手电。&quot;},{&quot;id&quot;:5,&quot;name&quot;:&quot;金鳞锦&quot;,&quot;p&quot;:4,&quot;kg&quot;:[2.0,5.0],&quot;coin&quot;:30,&quot;line&quot;:&quot;今晚的运气，全在这一条了。&quot;}]};
+
+const W = 720, H = 1570;
+const UI = { // ui.png 里每个组件的位置 [x,y,w,h]
+  gauge: [0, 0, 640, 100], panel: [0, 100, 600, 296], button: [0, 396, 360, 135],
+  bobber: [360, 396, 60, 96], bang: [420, 396, 80, 90], badge: [500, 396, 100, 100]
+};
+const ROD_TIP = [CFG.rodTip[0], CFG.rodTip[1]];
+const COLORS = { ink: &#x27;#0E1630&#x27;, paper: &#x27;#F6F3EA&#x27;, lantern: &#x27;#F2A541&#x27;, white: &#x27;#FFFFFF&#x27;, red: &#x27;#D64545&#x27; };
+
+const cv = document.getElementById(&#x27;game&#x27;);
+const ctx = cv.getContext(&#x27;2d&#x27;);
+const img = {};
+let scale = 1, offX = 0, offY = 0;
+
+function load(name, src) {
+  return new Promise(r =&gt; { const i = new Image(); i.onload = () =&gt; { img[name] = i; r(); }; i.onerror = () =&gt; r(); i.src = src; });
+}
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  cv.style.width = innerWidth + &#x27;px&#x27;; cv.style.height = innerHeight + &#x27;px&#x27;;
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  offX = (innerWidth - W * scale) / 2; offY = (innerHeight - H * scale) / 2;
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * offX, dpr * offY);
+}
+
+// ---------- 状态 ----------
+let S = &#x27;title&#x27;;            // title | play | result
+let phase = &#x27;ready&#x27;;        // ready | fly | wait | reel
+let t0 = 0, timeLeft = CFG.roundSec, castNo = 0;
+let bob = { x: 360, y: 820 }, flyFrom = 0, biteAt = 0, reelStart = 0, zoneA = 0.4;
+let catches = [], popup = null, toast = null, eggTaps = [];
+
+function now() { return performance.now() / 1000; }
+function rand(a, b) { return a + Math.random() * (b - a); }
+function say(text, sec = 1.4) { toast = { text, until: now() + sec }; }
+
+function startRound() {
+  S = &#x27;play&#x27;; phase = &#x27;ready&#x27;; t0 = now(); timeLeft = CFG.roundSec; castNo = 0; catches = []; popup = null; toast = null;
+}
+function cast() {
+  phase = &#x27;fly&#x27;; flyFrom = now();
+  bob = { x: rand(180, 540), y: rand(580, 800) };
+}
+function rollFish() {
+  const total = CFG.fish.reduce((s, f) =&gt; s + f.p, 0);
+  let r = Math.random() * total;
+  for (const f of CFG.fish) { if ((r -= f.p) &lt; 0) return f; }
+  return CFG.fish[0];
+}
+function needle() { // 0..1 来回摆动，每秒 CFG.barHz 个来回
+  return (1 - Math.cos(2 * Math.PI * CFG.barHz * (now() - reelStart))) / 2;
+}
+function endRound() { S = &#x27;result&#x27;; phase = &#x27;ready&#x27;; popup = null; }
+
+// ---------- 输入 ----------
+function tap(px, py) {
+  const x = (px - offX) / scale, y = (py - offY) / scale;
+  if (S === &#x27;title&#x27;) {
+    if (x &lt; 160 &amp;&amp; y &lt; 260) { // 彩蛋：左上角 1.5 秒内连点 5 下
+      const t = now(); eggTaps = eggTaps.filter(v =&gt; t - v &lt; 1.5); eggTaps.push(t);
+      if (eggTaps.length &gt;= 5) { eggTaps = []; say(CFG.eggCode, 3); }
+      return;
+    }
+    if (inBtn(x, y, 900)) startRound();
+    return;
+  }
+  if (S === &#x27;result&#x27;) { if (inBtn(x, y, 1010)) startRound(); return; }
+  if (popup) { popup = null; return; }
+  if (phase === &#x27;ready&#x27;) cast();
+  else if (phase === &#x27;wait&#x27;) { phase = &#x27;ready&#x27;; say(&#x27;太急了，鱼被吓跑了&#x27;); }
+  else if (phase === &#x27;reel&#x27;) {
+    const p = needle();
+    if (p &gt;= zoneA &amp;&amp; p &lt;= zoneA + CFG.zoneW) {
+      const f = rollFish();
+      const kg = Math.round(rand(f.kg[0], f.kg[1]) * 100) / 100;
+      catches.push({ f, kg }); popup = { f, kg, until: now() + 1.8 };
+    } else say(&#x27;线松了，鱼跑了&#x27;);
+    phase = &#x27;ready&#x27;;
+  }
+}
+function inBtn(x, y, cy) { return x &gt; 180 &amp;&amp; x &lt; 540 &amp;&amp; y &gt; cy - 60 &amp;&amp; y &lt; cy + 60; }
+cv.addEventListener(&#x27;pointerdown&#x27;, e =&gt; { e.preventDefault(); tap(e.clientX, e.clientY); });
+
+// ---------- 逻辑 ----------
+function update() {
+  const t = now();
+  if (S !== &#x27;play&#x27;) return;
+  timeLeft = Math.max(0, CFG.roundSec - (t - t0));
+  if (timeLeft &lt;= 0) return endRound();
+  if (popup &amp;&amp; t &gt; popup.until) popup = null;
+  if (phase === &#x27;fly&#x27; &amp;&amp; t - flyFrom &gt; 0.4) {
+    phase = &#x27;wait&#x27;;
+    if (castNo === 0) biteAt = -1; else biteAt = t + rand(1, 3);
+    castNo++;
+    if (biteAt &lt; 0) setTimeout(() =&gt; { if (S === &#x27;play&#x27; &amp;&amp; phase === &#x27;wait&#x27;) { phase = &#x27;ready&#x27;; say(CFG.emptyText, 2); } }, 2200);
+  }
+  if (phase === &#x27;wait&#x27; &amp;&amp; biteAt &gt; 0 &amp;&amp; t &gt;= biteAt) {
+    phase = &#x27;reel&#x27;; reelStart = t; zoneA = rand(0.08, 0.92 - CFG.zoneW);
+  }
+  if (phase === &#x27;reel&#x27; &amp;&amp; t - reelStart &gt; 3) { phase = &#x27;ready&#x27;; say(&#x27;鱼挣脱了&#x27;); }
+}
+
+// ---------- 绘制 ----------
+function sprite(name, r, dx, dy, dw, dh) { if (img[name]) ctx.drawImage(img[name], r[0], r[1], r[2], r[3], dx, dy, dw, dh); }
+function fishRect(i) { return [(i % 3) * 240, Math.floor(i / 3) * 160, 240, 160]; }
+function text(s, x, y, size, color, align = &#x27;center&#x27;, weight = &#x27;bold&#x27;, stroke = true) {
+  ctx.font = `${weight} ${size}px &quot;PingFang SC&quot;,&quot;Microsoft YaHei&quot;,sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = &#x27;middle&#x27;;
+  if (stroke) { ctx.lineWidth = Math.max(3, size / 8); ctx.strokeStyle = &#x27;rgba(14,22,48,0.85)&#x27;; ctx.strokeText(s, x, y); }
+  ctx.fillStyle = color; ctx.fillText(s, x, y);
+}
+function button(label, cy) {
+  sprite(&#x27;ui&#x27;, UI.button, 180, cy - 67, 360, 135);
+  text(label, 360, cy - 8, 40, COLORS.ink, &#x27;center&#x27;, &#x27;bold&#x27;, false);
+}
+function drawLine(x, y) {
+  ctx.strokeStyle = &#x27;rgba(246,243,234,0.7)&#x27;; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(ROD_TIP[0], ROD_TIP[1]);
+  ctx.quadraticCurveTo((ROD_TIP[0] + x) / 2, Math.min(ROD_TIP[1], y) - 60, x, y); ctx.stroke();
+}
+function render() {
+  const t = now();
+  ctx.fillStyle = COLORS.ink; ctx.fillRect(-2000, -2000, W + 4000, H + 4000);
+  if (img.bg) ctx.drawImage(img.bg, 0, 0, W, H);
+
+  if (S === &#x27;title&#x27;) {
+    text(&#x27;夜 钓&#x27;, 360, 600, 120, COLORS.paper);
+    text(CFG.subtitle, 360, 700, 30, COLORS.lantern, &#x27;center&#x27;, &#x27;normal&#x27;);
+    button(&#x27;开始夜钓&#x27;, 900);
+    text(&#x27;60 秒，能钓几条是几条&#x27;, 360, 1000, 26, COLORS.paper, &#x27;center&#x27;, &#x27;normal&#x27;);
+  }
+
+  if (S === &#x27;play&#x27;) {
+    // 顶部左侧 HUD（右上角 200x110 是平台胶囊，不放东西）
+    text(`⏱ ${Math.ceil(timeLeft)}s`, 32, 150, 40, timeLeft &lt;= 10 ? COLORS.red : COLORS.paper, &#x27;left&#x27;);
+    const kg = catches.reduce((s, c) =&gt; s + c.kg, 0);
+    text(`渔获 ${catches.length} 条 · ${kg.toFixed(2)} kg`, 32, 205, 26, COLORS.paper, &#x27;left&#x27;, &#x27;normal&#x27;);
+
+    if (phase === &#x27;fly&#x27;) {
+      const k = Math.min(1, (t - flyFrom) / 0.4);
+      const x = ROD_TIP[0] + (bob.x - ROD_TIP[0]) * k, y = ROD_TIP[1] + (bob.y - ROD_TIP[1]) * k - Math.sin(k * Math.PI) * 220;
+      drawLine(x, y); sprite(&#x27;ui&#x27;, UI.bobber, x - 20, y - 32, 40, 64);
+    }
+    if (phase === &#x27;wait&#x27; || phase === &#x27;reel&#x27;) {
+      const dip = phase === &#x27;reel&#x27; ? 14 : Math.sin(t * 3) * 4;
+      drawLine(bob.x, bob.y + dip);
+      sprite(&#x27;ui&#x27;, UI.bobber, bob.x - 20, bob.y - 32 + dip, 40, 64);
+      ctx.strokeStyle = &#x27;rgba(246,243,234,0.35)&#x27;; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(bob.x, bob.y + 32, 30 + (t * 20) % 20, 8, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (phase === &#x27;reel&#x27;) {
+      sprite(&#x27;ui&#x27;, UI.bang, bob.x + 16, bob.y - 104, 60, 68);
+      // 张力条：先画槽和色块，再盖外框贴图（外框中间透明），最后画指针
+      const gx = 66, gy = 878, gw = 588, gh = 59;
+      ctx.fillStyle = &#x27;rgba(14,22,48,0.9)&#x27;; ctx.fillRect(gx, gy, gw, gh);
+      ctx.fillStyle = CFG.barColor; ctx.fillRect(gx + gw * zoneA, gy, gw * CFG.zoneW, gh);
+      sprite(&#x27;ui&#x27;, UI.gauge, 40, 860, 640, 100);
+      const nx = gx + gw * needle();
+      ctx.fillStyle = COLORS.white; ctx.fillRect(nx - 4, gy - 12, 8, gh + 24);
+      text(&#x27;在色块里点一下收线！&#x27;, 360, 1000, 30, COLORS.paper);
+    }
+    if (phase === &#x27;ready&#x27; &amp;&amp; !popup) text(&#x27;点击屏幕抛竿&#x27;, 360, 960, 36, COLORS.paper);
+
+    if (popup) {
+      sprite(&#x27;ui&#x27;, UI.panel, 60, 500, 600, 336);
+      sprite(&#x27;fish&#x27;, fishRect(popup.f.id), 240, 520, 240, 160);
+      text(`${popup.f.name}  ${popup.kg.toFixed(2)} kg`, 360, 712, 40, COLORS.ink, &#x27;center&#x27;, &#x27;bold&#x27;, false);
+      text(popup.f.line, 360, 772, 26, COLORS.ink, &#x27;center&#x27;, &#x27;normal&#x27;, false);
+    }
+  }
+
+  if (S === &#x27;result&#x27;) {
+    sprite(&#x27;ui&#x27;, UI.panel, 40, 360, 640, 540);
+    text(&#x27;今晚收竿&#x27;, 360, 450, 64, COLORS.ink, &#x27;center&#x27;, &#x27;bold&#x27;, false);
+    const kg = catches.reduce((s, c) =&gt; s + c.kg, 0);
+    text(`${catches.length} 条 · ${kg.toFixed(2)} kg`, 360, 530, 40, COLORS.ink, &#x27;center&#x27;, &#x27;bold&#x27;, false);
+    const best = catches.slice().sort((a, b) =&gt; b.f.id - a.f.id || b.kg - a.kg)[0];
+    if (best) {
+      sprite(&#x27;fish&#x27;, fishRect(best.f.id), 240, 570, 240, 160);
+      text(`最佳：${best.f.name} ${best.kg.toFixed(2)} kg`, 360, 760, 30, COLORS.ink, &#x27;center&#x27;, &#x27;normal&#x27;, false);
+    } else text(&#x27;空军了。月亮作证。&#x27;, 360, 660, 30, COLORS.ink, &#x27;center&#x27;, &#x27;normal&#x27;, false);
+    const coin = catches.reduce((s, c) =&gt; s + c.f.coin, 0);
+    text(`获得金币 ${coin}`, 360, 830, 36, &#x27;#B07A1E&#x27;, &#x27;center&#x27;, &#x27;bold&#x27;, false);
+    button(&#x27;再来一局&#x27;, 1010);
+  }
+
+  if (toast &amp;&amp; t &lt; toast.until) text(toast.text, 360, 700, 34, COLORS.lantern);
+}
+
+function loop() { update(); render(); requestAnimationFrame(loop); }
+addEventListener(&#x27;resize&#x27;, resize);
+resize();
+Promise.all([load(&#x27;bg&#x27;, CFG.assets.bg), load(&#x27;fish&#x27;, CFG.assets.fish), load(&#x27;ui&#x27;, CFG.assets.ui)]).then(loop);
+
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;
+</code></pre>
+</main></body></html>
